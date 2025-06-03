@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard Commandes</title>
+  <title>Dashboard Commandes 2025</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
@@ -16,12 +16,12 @@
     }
     h1 {
       text-align: center;
-      font-size: 3rem;
+      font-size: 2.5rem;
+      margin-bottom: 20px;
     }
     .container {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
       gap: 20px;
     }
     .card {
@@ -29,59 +29,30 @@
       padding: 20px;
       border-radius: 15px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-      flex: 1 1 500px;
-      min-height: 250px;
-    }
-    .alert-container {
-      height: 240px;
-      overflow: hidden;
-      position: relative;
-    }
-    .alert-list {
-      position: absolute;
-      display: flex;
-      flex-direction: column;
-      animation: scroll-up 30s linear infinite;
     }
     .alert-message {
       padding: 20px;
-      margin: 10px 0;
       border-radius: 10px;
-      font-size: 1.8rem;
+      font-size: 1.4rem;
       font-weight: bold;
+      margin-bottom: 10px;
       text-align: center;
-      width: 100%;
     }
-    .reliquat {
-      background-color: #ff3b3b;
-      color: white;
+    .reliquat { background-color: #ff3b3b; color: white; }
+    .traite { background-color: #ffc107; color: black; }
+    .encours { background-color: #00bcd4; color: white; }
+    .status-stats div {
+      font-size: 1.5rem;
+      margin: 10px 0;
+      font-weight: bold;
     }
-    .traite {
-      background-color: #ffc107;
-      color: black;
-    }
-    .encours {
-      background-color: #00bcd4;
-      color: white;
-    }
-
-    @keyframes scroll-up {
-      0% { top: 100%; }
-      100% { top: -100%; }
-    }
-
+    .green { color: #4CAF50; }
+    .blue { color: #2196F3; }
+    .yellow { color: #FFC107; }
+    .orange { color: #FF5722; }
     canvas {
-      width: 100% !important;
-      height: 300px !important;
-    }
-
-    @media (max-width: 768px) {
-      h1 {
-        font-size: 2rem;
-      }
-      .alert-message {
-        font-size: 1.2rem;
-      }
+      max-width: 100% !important;
+      height: auto !important;
     }
   </style>
 </head>
@@ -94,23 +65,20 @@
     </div>
     <div class="card">
       <h2>Notifications Critiques</h2>
-      <div class="alert-container">
-        <div class="alert-list" id="alert-list"></div>
-      </div>
+      <div id="alert-list"></div>
     </div>
     <div class="card">
-      <h2>Commandes par statut (Camembert)</h2>
+      <h2>Commandes par statut</h2>
       <canvas id="pieChart"></canvas>
     </div>
     <div class="card">
-      <h2>Commandes par statut (Barres)</h2>
-      <canvas id="barChart"></canvas>
+      <h2>Commandes par statut</h2>
+      <div class="status-stats" id="status-stats"></div>
     </div>
   </div>
 
   <script>
-    // 🔁 À personnaliser avec ton vrai dépôt GitHub
-    const fileUrl = "https://raw.githubusercontent.com/hatimess2025/dashboard-commandes/main/commandes.xlsx";
+    const fileUrl = "https://raw.githubusercontent.com/ton-utilisateur/dashboard-commandes/main/commandes.xlsx"; // Remplacer par l'URL réelle
 
     fetch(fileUrl)
       .then(res => res.arrayBuffer())
@@ -123,8 +91,7 @@
       .catch(err => console.error("Erreur de chargement Excel:", err));
 
     function handleData(data) {
-      const total = data.length;
-      document.getElementById("total-commandes").textContent = total;
+      document.getElementById("total-commandes").textContent = data.length;
 
       const statusCount = {};
       const alerts = [];
@@ -133,13 +100,12 @@
       data.forEach(row => {
         const statut = row['Statut'] || "Inconnu";
         const date = new Date(row['Date']);
-        const jours = Math.floor((now - date) / (1000 * 60 * 60 * 24));
         const num = row['Numéro de commande'] || "Commande inconnue";
-
+        const jours = Math.floor((now - date) / (1000 * 60 * 60 * 24));
         statusCount[statut] = (statusCount[statut] || 0) + 1;
 
         if (statut.toLowerCase().includes('reliquat')) {
-          alerts.push(`<div class='alert-message reliquat'>${num} en reliquat depuis ${date.toLocaleDateString()} – à relancer le fournisseur</div>`);
+          alerts.push(`<div class='alert-message reliquat'>${num} en reliquat depuis ${date.toLocaleDateString()} – relancer le fournisseur</div>`);
         } else if (statut.toLowerCase().includes('trait')) {
           if (jours > 14) alerts.push(`<div class='alert-message traite'>${num} traitée depuis ${date.toLocaleDateString()} – à vérifier la livraison</div>`);
         } else if (statut.toLowerCase().includes('en cours')) {
@@ -151,40 +117,31 @@
 
       const labels = Object.keys(statusCount);
       const values = Object.values(statusCount);
-      const colors = ["#4CAF50", "#2196F3", "#FFC107", "#FF5722", "#9C27B0", "#00bcd4", "#e91e63"];
+      const colors = ["#4CAF50", "#2196F3", "#FFC107", "#FF5722", "#9C27B0"];
 
       new Chart(document.getElementById('pieChart'), {
         type: 'pie',
         data: {
           labels: labels,
-          datasets: [{ data: values, backgroundColor: colors }]
-        }
-      });
-
-      new Chart(document.getElementById('barChart'), {
-        type: 'bar',
-        data: {
-          labels: labels,
           datasets: [{
-            label: 'Nombre de commandes',
             data: values,
-            backgroundColor: colors
+            backgroundColor: colors.slice(0, labels.length)
           }]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            y: { beginAtZero: true, ticks: { color: '#fff' } },
-            x: { ticks: { color: '#fff' } }
-          },
           plugins: {
             legend: {
-              labels: { color: '#fff' }
+              labels: { color: '#ffffff' }
             }
           }
         }
       });
+
+      const statHTML = labels.map((label, i) => {
+        let colorClass = ['green', 'blue', 'yellow', 'orange', 'purple'][i] || 'white';
+        return `<div class='${colorClass}'>${label} : ${values[i]}</div>`;
+      }).join('');
+      document.getElementById("status-stats").innerHTML = statHTML;
     }
   </script>
 </body>
