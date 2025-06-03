@@ -1,22 +1,22 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard Commandes</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     body {
-      font-family: Arial, sans-serif;
       margin: 0;
       padding: 20px;
       background-color: #1e1e2f;
       color: #f0f0f0;
+      font-family: Arial, sans-serif;
     }
     h1 {
       text-align: center;
-      font-size: 2.5rem;
+      font-size: 3rem;
     }
     .container {
       display: flex;
@@ -29,32 +29,41 @@
       padding: 20px;
       border-radius: 15px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-      flex: 1 1 400px;
-      max-width: 600px;
+      flex: 1 1 500px;
+      min-height: 250px;
     }
     .alert-container {
-      height: 250px;
+      height: 240px;
       overflow: hidden;
       position: relative;
     }
     .alert-list {
+      position: absolute;
       display: flex;
       flex-direction: column;
-      position: absolute;
-      animation: scroll-up 25s linear infinite;
+      animation: scroll-up 30s linear infinite;
     }
     .alert-message {
       padding: 20px;
+      margin: 10px 0;
       border-radius: 10px;
-      margin: 8px 0;
+      font-size: 1.8rem;
       font-weight: bold;
-      font-size: 1.3rem;
-      width: 100%;
       text-align: center;
+      width: 100%;
     }
-    .reliquat { background-color: #ff4d4d; color: white; }
-    .traite { background-color: #ffa500; color: black; }
-    .encours { background-color: #00bcd4; color: white; }
+    .reliquat {
+      background-color: #ff3b3b;
+      color: white;
+    }
+    .traite {
+      background-color: #ffc107;
+      color: black;
+    }
+    .encours {
+      background-color: #00bcd4;
+      color: white;
+    }
 
     @keyframes scroll-up {
       0% { top: 100%; }
@@ -63,7 +72,7 @@
 
     canvas {
       width: 100% !important;
-      height: auto !important;
+      height: 300px !important;
     }
 
     @media (max-width: 768px) {
@@ -71,7 +80,7 @@
         font-size: 2rem;
       }
       .alert-message {
-        font-size: 1rem;
+        font-size: 1.2rem;
       }
     }
   </style>
@@ -81,7 +90,7 @@
   <div class="container">
     <div class="card">
       <h2>Total Commandes</h2>
-      <p id="total-commandes" style="font-size: 2rem; font-weight: bold;">0</p>
+      <p id="total-commandes" style="font-size: 2.5rem; font-weight: bold;">0</p>
     </div>
     <div class="card">
       <h2>Notifications Critiques</h2>
@@ -100,7 +109,8 @@
   </div>
 
   <script>
-    const fileUrl = "https://raw.githubusercontent.com/hatimess2025/dashboard-commandes/main/commandes.xlsx"; // Remplace par ton vrai lien GitHub
+    // 🔁 À personnaliser avec ton vrai dépôt GitHub
+    const fileUrl = "https://raw.githubusercontent.com/ton-utilisateur/dashboard-commandes/main/commandes.xlsx";
 
     fetch(fileUrl)
       .then(res => res.arrayBuffer())
@@ -123,16 +133,17 @@
       data.forEach(row => {
         const statut = row['Statut'] || "Inconnu";
         const date = new Date(row['Date']);
+        const jours = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+        const num = row['Numéro de commande'] || "Commande inconnue";
+
         statusCount[statut] = (statusCount[statut] || 0) + 1;
 
-        const jours = Math.floor((now - date) / (1000 * 60 * 60 * 24));
-
         if (statut.toLowerCase().includes('reliquat')) {
-          alerts.push(`<div class='alert-message reliquat'>${row['Numéro de commande']} en reliquat depuis ${date.toLocaleDateString()} – à relancer le fournisseur</div>`);
+          alerts.push(`<div class='alert-message reliquat'>${num} en reliquat depuis ${date.toLocaleDateString()} – à relancer le fournisseur</div>`);
         } else if (statut.toLowerCase().includes('trait')) {
-          if (jours > 14) alerts.push(`<div class='alert-message traite'>${row['Numéro de commande']} traitée depuis ${date.toLocaleDateString()} – à vérifier la livraison</div>`);
+          if (jours > 14) alerts.push(`<div class='alert-message traite'>${num} traitée depuis ${date.toLocaleDateString()} – à vérifier la livraison</div>`);
         } else if (statut.toLowerCase().includes('en cours')) {
-          if (jours > 2) alerts.push(`<div class='alert-message encours'>${row['Numéro de commande']} en cours depuis ${date.toLocaleDateString()} – suivi requis</div>`);
+          if (jours > 2) alerts.push(`<div class='alert-message encours'>${num} en cours depuis ${date.toLocaleDateString()} – suivi requis</div>`);
         }
       });
 
@@ -154,23 +165,22 @@
         type: 'bar',
         data: {
           labels: labels,
-          datasets: [{ label: 'Nombre de commandes', data: values, backgroundColor: colors }]
+          datasets: [{
+            label: 'Nombre de commandes',
+            data: values,
+            backgroundColor: colors
+          }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           scales: {
-            y: {
-              beginAtZero: true,
-              ticks: { color: '#ffffff' }
-            },
-            x: {
-              ticks: { color: '#ffffff' }
-            }
+            y: { beginAtZero: true, ticks: { color: '#fff' } },
+            x: { ticks: { color: '#fff' } }
           },
           plugins: {
             legend: {
-              labels: { color: '#ffffff' }
+              labels: { color: '#fff' }
             }
           }
         }
