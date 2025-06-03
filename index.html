@@ -16,7 +16,7 @@
     }
     h1 {
       text-align: center;
-      font-size: 2.5rem;
+      font-size: 3rem;
       margin-bottom: 20px;
     }
     .container {
@@ -30,26 +30,42 @@
       border-radius: 15px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
     }
+    .alert-container {
+      height: 300px;
+      overflow: hidden;
+      position: relative;
+    }
+    .alert-list {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      animation: scroll-up 30s linear infinite;
+    }
+    @keyframes scroll-up {
+      0% { top: 100%; }
+      100% { top: -100%; }
+    }
     .alert-message {
-      padding: 20px;
+      padding: 18px;
       border-radius: 10px;
-      font-size: 1.4rem;
+      font-size: 1.5rem;
       font-weight: bold;
-      margin-bottom: 10px;
+      margin: 10px 0;
       text-align: center;
     }
-    .reliquat { background-color: #ff3b3b; color: white; }
-    .traite { background-color: #ffc107; color: black; }
-    .encours { background-color: #00bcd4; color: white; }
+    .livree { background-color: #4CAF50; color: white; }
+    .encours { background-color: #e53935; color: white; }
+    .traite { background-color: #ff9800; color: black; }
+    .reliquat { background-color: #9c27b0; color: white; }
     .status-stats div {
       font-size: 1.5rem;
       margin: 10px 0;
       font-weight: bold;
     }
     .green { color: #4CAF50; }
-    .blue { color: #2196F3; }
-    .yellow { color: #FFC107; }
-    .orange { color: #FF5722; }
+    .red { color: #e53935; }
+    .orange { color: #ff9800; }
+    .purple { color: #9c27b0; }
     canvas {
       max-width: 100% !important;
       height: auto !important;
@@ -61,11 +77,13 @@
   <div class="container">
     <div class="card">
       <h2>Total Commandes</h2>
-      <p id="total-commandes" style="font-size: 2.5rem; font-weight: bold;">0</p>
+      <p id="total-commandes" style="font-size: 2.8rem; font-weight: bold;">0</p>
     </div>
     <div class="card">
       <h2>Notifications Critiques</h2>
-      <div id="alert-list"></div>
+      <div class="alert-container">
+        <div class="alert-list" id="alert-list"></div>
+      </div>
     </div>
     <div class="card">
       <h2>Commandes par statut</h2>
@@ -78,7 +96,7 @@
   </div>
 
   <script>
-    const fileUrl = "https://raw.githubusercontent.com/hatimess2025/dashboard-commandes/main/commandes.xlsx"; // Remplacer par l'URL réelle
+    const fileUrl = "https://raw.githubusercontent.com/hatimess2025/dashboard-commandes/main/commandes.xlsx";
 
     fetch(fileUrl)
       .then(res => res.arrayBuffer())
@@ -110,6 +128,8 @@
           if (jours > 14) alerts.push(`<div class='alert-message traite'>${num} traitée depuis ${date.toLocaleDateString()} – à vérifier la livraison</div>`);
         } else if (statut.toLowerCase().includes('en cours')) {
           if (jours > 2) alerts.push(`<div class='alert-message encours'>${num} en cours depuis ${date.toLocaleDateString()} – suivi requis</div>`);
+        } else if (statut.toLowerCase().includes('livrée')) {
+          // Optionnel : ajouter un message si besoin
         }
       });
 
@@ -117,7 +137,16 @@
 
       const labels = Object.keys(statusCount);
       const values = Object.values(statusCount);
-      const colors = ["#4CAF50", "#2196F3", "#FFC107", "#FF5722", "#9C27B0"];
+
+      const colorMap = {
+        'En cours de traitement': '#e53935',
+        'Traité': '#ff9800',
+        'Livrée': '#4CAF50',
+        'Reliquat': '#9c27b0',
+        'Expédié': '#03a9f4'
+      };
+
+      const colors = labels.map(label => colorMap[label] || '#777');
 
       new Chart(document.getElementById('pieChart'), {
         type: 'pie',
@@ -125,7 +154,7 @@
           labels: labels,
           datasets: [{
             data: values,
-            backgroundColor: colors.slice(0, labels.length)
+            backgroundColor: colors
           }]
         },
         options: {
@@ -138,9 +167,15 @@
       });
 
       const statHTML = labels.map((label, i) => {
-        let colorClass = ['green', 'blue', 'yellow', 'orange', 'purple'][i] || 'white';
-        return `<div class='${colorClass}'>${label} : ${values[i]}</div>`;
+        const val = values[i];
+        let colorClass = '';
+        if (label.toLowerCase().includes('en cours')) colorClass = 'red';
+        else if (label.toLowerCase().includes('trait')) colorClass = 'orange';
+        else if (label.toLowerCase().includes('livrée')) colorClass = 'green';
+        else if (label.toLowerCase().includes('reliquat')) colorClass = 'purple';
+        return `<div class='${colorClass}'>${label} : ${val}</div>`;
       }).join('');
+
       document.getElementById("status-stats").innerHTML = statHTML;
     }
   </script>
