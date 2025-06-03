@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Commandes</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #0e1726;
+      color: #ffffff;
+    }
+    .dashboard {
+      padding: 2rem;
+    }
+    .cards {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .card {
+      flex: 1;
+      background-color: #1e293b;
+      padding: 1rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      text-align: center;
+      transition: transform 0.3s ease;
+    }
+    .card:hover {
+      transform: scale(1.03);
+    }
+    .card h2 {
+      font-size: 2rem;
+      margin: 0;
+    }
+    .card p {
+      font-size: 1rem;
+      margin-top: 0.5rem;
+      color: #94a3b8;
+    }
+    .alert-banner {
+      background-color: #f97316;
+      color: #fff;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+      overflow: hidden;
+      position: relative;
+      height: 2.5rem;
+    }
+    .alert-content {
+      position: absolute;
+      white-space: nowrap;
+      animation: scrollText 30s linear infinite;
+    }
+    @keyframes scrollText {
+      0% { left: 100%; }
+      100% { left: -100%; }
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #1e293b;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 1rem;
+      text-align: left;
+    }
+    th {
+      background-color: #334155;
+    }
+    tr:nth-child(even) {
+      background-color: #1e293b;
+    }
+    .statut-traite {
+      color: #10b981;
+      font-weight: bold;
+    }
+    .statut-non-traite {
+      color: #ef4444;
+      font-weight: bold;
+    }
+    .statut-reliquat {
+      color: #facc15;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <div class="cards">
+      <div class="card">
+        <h2 id="non-traite">0</h2>
+        <p>Non traitées</p>
+      </div>
+      <div class="card">
+        <h2 id="traite">0</h2>
+        <p>Traitées</p>
+      </div>
+      <div class="card">
+        <h2 id="reliquat">0</h2>
+        <p>En reliquat</p>
+      </div>
+    </div>
+
+    <div class="alert-banner" id="alerte">
+      <div class="alert-content" id="alerte-content">
+        🔔 Chargement des alertes en cours...
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Numéro de commande</th>
+          <th>Date</th>
+          <th>Livraison à</th>
+          <th>Total TTC</th>
+          <th>Statut</th>
+        </tr>
+      </thead>
+      <tbody id="table-commandes">
+        <!-- Lignes insérées dynamiquement ici -->
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    async function chargerExcel() {
+      const response = await fetch('commandes.xlsx');
+      const data = await response.arrayBuffer();
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const commandes = XLSX.utils.sheet_to_json(sheet);
+
+      const now = new Date();
+      let traite = 0, non_traite = 0, reliquat = 0;
+      let alertes = [];
+
+      commandes.forEach(cmd => {
+        const dateCmd = new Date(cmd['Date']);
+        const diffJours = Math.floor((now - dateCmd) / (1000 * 60 * 60 * 24));
+
+        let statutClass = "statut-traite";
+        if (cmd['Statut'] && cmd['Statut'].includes("En cours")) {
+          if (diffJours > 14) {
+            statutClass = "statut-reliquat";
+            reliquat++;
+            alertes.push(`Commande ${cmd['Numéro de commande']} en reliquat depuis ${diffJours} jours.`);
+          } else {
+            statutClass = "statut-non-traite";
+            non_traite++;
+            alertes.push(`Commande ${cmd['Numéro de commande']} en cours de traitement - à traiter rapidement.`);
+          }
+        } else {
+          traite++;
+        }
+
+        document.getElementById("table-commandes").innerHTML += `
+          <tr>
+            <td>${cmd['Numéro de commande']}</td>
+            <td>${cmd['Date']}</td>
+            <td>${cmd['Livraison à']}</td>
+            <td>${cmd['Total TTC'].toFixed(2)} €</td>
+            <td class="${statutClass}">${cmd['Statut']}</td>
+          </tr>`;
+      });
+
+      document.getElementById("non-traite").textContent = non_traite;
+      document.getElementById("traite").textContent = traite;
+      document.getElementById("reliquat").textContent = reliquat;
+
+      const alerteEl = document.getElementById("alerte");
+      const alerteContent = document.getElementById("alerte-content");
+      if (alertes.length > 0) {
+        alerteContent.innerText = alertes.join("   ⚠️   ");
+      } else {
+        alerteEl.style.display = "none";
+      }
+    }
+
+    chargerExcel();
+  </script>
+</body>
+</html>
